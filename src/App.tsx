@@ -1,11 +1,11 @@
 import './App.css'
+import { AppShell } from "./components/layout/AppShell";
+import { Dashboard } from "./pages/Dashboard";
 
-function App() {
+export default function App() {
   return (
-    <div className="p-8 text-2xl font-semibold text-green-600">
-      Tailwind is working 🚀
-    </div>
-  )
+    <AppShell>
+      <Dashboard />
+    </AppShell>
+  );
 }
-
-export default App
