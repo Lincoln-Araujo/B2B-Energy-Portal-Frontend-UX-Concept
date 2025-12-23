@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type AssetStatus = "Operational" | "Maintenance" | "Alert";
 
@@ -21,6 +21,118 @@ const mockAssets: Asset[] = [
   { id: "HMI-007", name: "HMI Panel 7", site: "Turku", status: "Maintenance", updatedAt: "2025-12-21 16:02" },
 ];
 
+function isAssetStatus(value: string): value is AssetStatus {
+  return value === "Operational" || value === "Maintenance" || value === "Alert";
+}
+
+function SkeletonRow() {
+  return (
+    <tr className="border-b last:border-b-0">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <td key={i} className="px-4 py-3">
+          <div className="h-4 w-full max-w-[240px] rounded bg-gray-200" />
+        </td>
+      ))}
+    </tr>
+  );
+}
+
+type DetailsDialogProps = {
+  asset: Asset;
+  onClose: () => void;
+};
+
+function DetailsDialog({ asset, onClose }: DetailsDialogProps) {
+  const closeBtnRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    closeBtnRef.current?.focus();
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-[60]">
+      <div className="absolute inset-0 bg-black/30" onClick={onClose} aria-hidden="true" />
+
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Asset details for ${asset.id}`}
+        className="absolute left-1/2 top-1/2 w-[92vw] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-lg border bg-white shadow-xl"
+      >
+        <div className="flex items-center justify-between border-b p-4">
+          <div>
+            <p className="text-sm font-semibold">Asset details</p>
+            <p className="mt-1 text-xs text-gray-600">{asset.id}</p>
+          </div>
+
+          <button
+            ref={closeBtnRef}
+            type="button"
+            onClick={onClose}
+            className="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-gray-50
+                       focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
+          >
+            Close
+          </button>
+        </div>
+
+        <div className="p-4">
+          <dl className="grid gap-3 text-sm">
+            <div>
+              <dt className="text-xs font-semibold text-gray-700">Name</dt>
+              <dd className="mt-1 text-gray-900">{asset.name}</dd>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <dt className="text-xs font-semibold text-gray-700">Site</dt>
+                <dd className="mt-1 text-gray-900">{asset.site}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-semibold text-gray-700">Status</dt>
+                <dd className="mt-1 text-gray-900">{asset.status}</dd>
+              </div>
+            </div>
+
+            <div>
+              <dt className="text-xs font-semibold text-gray-700">Last update</dt>
+              <dd className="mt-1 text-gray-900">{asset.updatedAt}</dd>
+            </div>
+          </dl>
+
+          <div className="mt-5 flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-gray-50
+                         focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
+              onClick={() => alert("Placeholder: navigate to Asset details page")}
+            >
+              Open full page
+            </button>
+
+            <button
+              type="button"
+              className="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-gray-50
+                         focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
+              onClick={() => alert("Placeholder: export asset details")}
+            >
+              Export
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function Assets() {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<"All" | AssetStatus>("All");
@@ -30,6 +142,36 @@ export function Assets() {
 
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [selected, setSelected] = useState<Asset | null>(null);
+  const viewBtnRef = useRef<HTMLButtonElement | null>(null);
+
+    const loadingTimerRef = useRef<number | null>(null);
+
+  const withLoading = useCallback((fn: () => void) => {
+    setIsLoading(true);
+
+    if (loadingTimerRef.current) {
+        window.clearTimeout(loadingTimerRef.current);
+    }
+
+    fn();
+
+    loadingTimerRef.current = window.setTimeout(() => {
+        setIsLoading(false);
+        loadingTimerRef.current = null;
+    }, 500);
+}, []);
+
+  useEffect(() => {
+    return () => {
+      if (loadingTimerRef.current) {
+        window.clearTimeout(loadingTimerRef.current);
+      }
+    };
+  }, []);
+
 
   function toggleSort(nextKey: SortKey) {
     setPage(1);
@@ -47,11 +189,6 @@ export function Assets() {
     if (sortKey !== key) return "none" as const;
     return sortDir === "asc" ? "ascending" : "descending";
   }
-
-  function isAssetStatus(value: string): value is AssetStatus {
-    return value === "Operational" || value === "Maintenance" || value === "Alert";
-  }
-
 
   const filteredAndSorted = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -79,18 +216,22 @@ export function Assets() {
   const totalPages = Math.max(1, Math.ceil(total / rowsPerPage));
 
   const paginated = useMemo(() => {
-    const start = (page - 1) * rowsPerPage;
+    const safePage = Math.min(Math.max(1, page), totalPages);
+    const start = (safePage - 1) * rowsPerPage;
     return filteredAndSorted.slice(start, start + rowsPerPage);
-  }, [filteredAndSorted, page, rowsPerPage]);
+  }, [filteredAndSorted, page, rowsPerPage, totalPages]);
+
+  useEffect(() => {
+    if (selected !== null) return;
+    viewBtnRef.current?.focus?.();
+  }, [selected]);
 
   return (
     <>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold">Assets</h1>
-          <p className="mt-2 text-sm text-gray-700">
-            Search, filter, sort and paginate assets.
-          </p>
+          <p className="mt-2 text-sm text-gray-700">Search, filter, sort and paginate assets.</p>
         </div>
 
         <div className="text-sm text-gray-700" aria-live="polite">
@@ -111,11 +252,17 @@ export function Assets() {
                 type="search"
                 value={query}
                 onChange={(e) => {
-                  setPage(1);
-                  setQuery(e.target.value);
+                    withLoading(() => {
+                        setPage(1);
+                        setQuery(e.target.value);
+                    });
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") setQuery("");
                 }}
                 placeholder="ID, name or site"
-                className="mt-2 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
+                className="mt-2 w-full rounded-md border px-3 py-2 text-sm
+                           focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
               />
             </div>
 
@@ -127,11 +274,14 @@ export function Assets() {
                 id="asset-status"
                 value={status}
                 onChange={(e) => {
-                    setPage(1);
                     const v = e.target.value;
-                    setStatus(v === "All" ? "All" : isAssetStatus(v) ? v : "All");
+                    withLoading(() => {
+                        setPage(1);
+                        setStatus(v === "All" ? "All" : isAssetStatus(v) ? v : "All");
+                    });
                 }}
-                className="mt-2 w-full rounded-md border bg-white px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
+                className="mt-2 w-full rounded-md border bg-white px-3 py-2 text-sm
+                           focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
               >
                 <option value="All">All</option>
                 <option value="Operational">Operational</option>
@@ -140,6 +290,27 @@ export function Assets() {
               </select>
             </div>
           </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                withLoading(() => {
+                    setQuery("");
+                    setStatus("All");
+                    setPage(1);
+                });
+              }}
+              className="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-gray-50
+                         focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
+            >
+              Clear filters
+            </button>
+
+            <span className="text-xs text-gray-600">
+              Loading is simulated to showcase skeleton UI patterns.
+            </span>
+          </div>
         </div>
       </section>
 
@@ -147,33 +318,79 @@ export function Assets() {
       <section className="mt-6" aria-label="Assets table">
         <div className="rounded-lg border bg-white">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] text-left text-sm">
+            <table className="w-full min-w-[880px] text-left text-sm">
+              <caption className="sr-only">
+                Assets with sortable columns and a per-row actions column.
+              </caption>
+
               <thead className="border-b bg-gray-50">
                 <tr>
                   {(["id", "name", "site", "status", "updatedAt"] as SortKey[]).map((key) => (
                     <th key={key} scope="col" aria-sort={ariaSortFor(key)} className="px-4 py-3">
                       <button
                         type="button"
-                        onClick={() => toggleSort(key)}
-                        className="font-semibold hover:underline focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
+                        onClick={() =>
+                            withLoading(() => {
+                                toggleSort(key);
+                            })
+                        }
+                        className="font-semibold hover:underline
+                                   focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
                       >
                         {key === "updatedAt" ? "Last update" : key.charAt(0).toUpperCase() + key.slice(1)}
+                        <span className="sr-only">
+                          {sortKey === key ? `, sorted ${sortDir}` : ", not sorted"}
+                        </span>
                       </button>
                     </th>
                   ))}
+
+                  <th scope="col" className="px-4 py-3 font-semibold text-gray-900">
+                    Actions
+                  </th>
                 </tr>
               </thead>
 
-              <tbody>
-                {paginated.map((a) => (
-                  <tr key={a.id} className="border-b last:border-b-0 hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium">{a.id}</td>
-                    <td className="px-4 py-3">{a.name}</td>
-                    <td className="px-4 py-3">{a.site}</td>
-                    <td className="px-4 py-3">{a.status}</td>
-                    <td className="px-4 py-3">{a.updatedAt}</td>
+              <tbody 
+                className={isLoading ? "animate-pulse" : ""}
+                aria-busy={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <SkeletonRow />
+                    <SkeletonRow />
+                    <SkeletonRow />
+                    <SkeletonRow />
+                    <SkeletonRow />
+                  </>
+                ) : paginated.length === 0 ? (
+                  <tr>
+                    <td className="px-4 py-6 text-sm text-gray-700" colSpan={6}>
+                      No results found. Try clearing filters.
+                    </td>
                   </tr>
-                ))}
+                ) : (
+                  paginated.map((a, idx) => (
+                    <tr key={a.id} className="border-b last:border-b-0 hover:bg-gray-50">
+                      <td className="px-4 py-3 font-medium">{a.id}</td>
+                      <td className="px-4 py-3">{a.name}</td>
+                      <td className="px-4 py-3">{a.site}</td>
+                      <td className="px-4 py-3">{a.status}</td>
+                      <td className="px-4 py-3">{a.updatedAt}</td>
+                      <td className="px-4 py-3">
+                        <button
+                          type="button"
+                          ref={idx === 0 ? viewBtnRef : undefined}
+                          onClick={() => setSelected(a)}
+                          className="rounded-md border px-2 py-1 text-sm font-medium hover:bg-gray-50
+                                     focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
+                        >
+                          View details
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -186,10 +403,13 @@ export function Assets() {
                 id="rows-per-page"
                 value={rowsPerPage}
                 onChange={(e) => {
-                  setPage(1);
-                  setRowsPerPage(Number(e.target.value));
+                    withLoading(() => {
+                        setPage(1);
+                        setRowsPerPage(Number(e.target.value));
+                    });
                 }}
-                className="rounded-md border bg-white px-2 py-1"
+                className="rounded-md border bg-white px-2 py-1
+                           focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
               >
                 <option value={10}>10</option>
                 <option value={25}>25</option>
@@ -200,22 +420,32 @@ export function Assets() {
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="rounded-md border px-2 py-1 disabled:opacity-50"
+                onClick={() =>
+                    withLoading(() => {
+                        setPage((p) => Math.max(1, p - 1));
+                    })
+                }
+                disabled={page === 1 || isLoading}
+                className="rounded-md border px-2 py-1 disabled:opacity-50
+                           focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
               >
                 Previous
               </button>
 
-              <span>
-                Page {page} of {totalPages}
+              <span aria-live="polite">
+                Page {Math.min(page, totalPages)} of {totalPages}
               </span>
 
               <button
                 type="button"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="rounded-md border px-2 py-1 disabled:opacity-50"
+                onClick={() =>
+                    withLoading(() => {
+                        setPage((p) => Math.min(totalPages, p + 1));
+                    })
+                }
+                disabled={page >= totalPages || isLoading}
+                className="rounded-md border px-2 py-1 disabled:opacity-50
+                           focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
               >
                 Next
               </button>
@@ -223,6 +453,8 @@ export function Assets() {
           </div>
         </div>
       </section>
+
+      {selected && <DetailsDialog asset={selected} onClose={() => setSelected(null)} />}
     </>
   );
 }
