@@ -1,30 +1,33 @@
-type NavItem = {
-  label: string;
-  href: string;
-  isActive?: boolean;
+import { NavLink } from "react-router-dom";
+
+type SidebarNavProps = {
+  onNavigate?: () => void;
 };
 
-const navItems: NavItem[] = [
-  { label: "Dashboard", href: "#/dashboard", isActive: true },
-  { label: "Assets", href: "#/assets" },
+const items = [
+  { label: "Dashboard", to: "/dashboard" },
+  { label: "Assets", to: "/assets" },
 ];
 
-export function SidebarNav() {
+export function SidebarNav({ onNavigate }: SidebarNavProps) {
   return (
     <nav className="p-4" aria-label="Primary">
       <ul className="space-y-1">
-        {navItems.map((item) => (
+        {items.map((item) => (
           <li key={item.label}>
-            <a
-              href={item.href}
-              className={[
-                "block rounded-md px-3 py-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2",
-                item.isActive ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50",
-              ].join(" ")}
-              aria-current={item.isActive ? "page" : undefined}
+            <NavLink
+              to={item.to}
+              end
+              onClick={() => onNavigate?.()}
+              className={({ isActive }) =>
+                [
+                  "block rounded-md px-3 py-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2",
+                  isActive ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50",
+                ].join(" ")
+              }
             >
               {item.label}
-            </a>
+            </NavLink>
           </li>
         ))}
       </ul>

@@ -111,7 +111,7 @@ export function MobileDrawer({ open, onClose, returnFocusRef }: MobileDrawerProp
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          <SidebarNav />
+          <SidebarNav onNavigate={onClose} />
         </div>
       </div>
     </div>
