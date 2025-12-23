@@ -7,7 +7,7 @@ export function Dashboard() {
       </p>
 
       <section className="mt-6" aria-label="Key metrics">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-6">
           {["Active Assets", "Service Alerts", "Energy Consumption", "System Status"].map((t) => (
             <div key={t} className="rounded-lg border bg-white p-4">
               <p className="text-xs font-medium text-gray-600">{t}</p>

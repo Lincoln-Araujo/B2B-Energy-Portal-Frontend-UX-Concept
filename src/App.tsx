@@ -1,4 +1,3 @@
-import './App.css'
 import { AppShell } from "./components/layout/AppShell";
 import { Dashboard } from "./pages/Dashboard";
 

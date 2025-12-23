@@ -13,10 +13,10 @@ export function AppShell({ children }: AppShellProps) {
       <SkipLink />
       <Header />
 
-      <div className="mx-auto flex max-w-6xl">
+      <div className="flex h-[calc(100dvh-3.5rem)] w-full">
         <Sidebar />
 
-        <main id="main" className="flex-1 px-4 py-6" tabIndex={-1}>
+        <main id="main" className="min-w-0 flex-1 overflow-y-auto px-6 py-6" tabIndex={-1}>
           {children}
         </main>
       </div>

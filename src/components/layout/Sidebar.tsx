@@ -11,15 +11,15 @@ const navItems: NavItem[] = [
 
 export function Sidebar() {
   return (
-    <aside className="hidden w-64 border-r bg-white md:block" aria-label="Sidebar">
-      <nav className="p-4" aria-label="Primary">
+    <aside className="hidden h-full w-72 border-r bg-white md:block" aria-label="Sidebar">
+      <nav className="h-full overflow-y-auto p-4" aria-label="Primary">
         <ul className="space-y-1">
           {navItems.map((item) => (
             <li key={item.label}>
               <a
                 href={item.href}
                 className={[
-                  "block rounded-md px-3 py-2 text-sm font-medium focus:outline-none focus-visible:ring-2",
+                  "block rounded-md px-3 py-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2",
                   item.isActive ? "bg-gray-100 text-gray-900" : "text-gray-700 hover:bg-gray-50",
                 ].join(" ")}
                 aria-current={item.isActive ? "page" : undefined}

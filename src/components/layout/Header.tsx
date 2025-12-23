@@ -5,7 +5,7 @@ type HeaderProps = {
 export function Header({ title = "B2B Energy Portal" }: HeaderProps) {
   return (
     <header className="border-b bg-white">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
+      <div className="flex h-14 w-full items-center justify-between px-4 lg:px-6 2xl:px-10">
         <div className="flex items-center gap-3">
           <div
             aria-hidden="true"
