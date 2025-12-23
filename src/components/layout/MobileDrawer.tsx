@@ -86,7 +86,7 @@ export function MobileDrawer({ open, onClose, returnFocusRef }: MobileDrawerProp
         aria-label="Navigation menu"
         ref={panelRef}
         className="fixed left-0 top-0 z-50 h-full w-80 max-w-[85vw] border-r bg-white shadow-xl outline-none
-                   transition-transform duration-200 ease-out translate-x-0"
+                   transition-transform duration-200 ease-out translate-x-0 flex flex-col"
       >
         <div className="flex h-14 items-center justify-between border-b px-4">
           <p className="text-sm font-semibold">Navigation</p>
@@ -99,8 +99,18 @@ export function MobileDrawer({ open, onClose, returnFocusRef }: MobileDrawerProp
             Close
           </button>
         </div>
+        <div className="border-b p-4">
+            <div className="grid gap-2">
+                <button className="w-full rounded-md border px-3 py-2 text-left text-sm font-medium hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2">
+                    Help
+                </button>
+                <button className="w-full rounded-md border px-3 py-2 text-left text-sm font-medium hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2">
+                    Profile
+                </button>
+            </div>
+        </div>
 
-        <div className="h-[calc(100%-3.5rem)] overflow-y-auto">
+        <div className="flex-1 overflow-y-auto">
           <SidebarNav />
         </div>
       </div>
