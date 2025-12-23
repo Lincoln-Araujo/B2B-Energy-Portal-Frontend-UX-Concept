@@ -1,7 +1,7 @@
 # B2B Energy Portal — Frontend & UX Concept
 
 This project is a frontend and UX concept for a B2B energy and services portal,
-designed for professional users who need clarity, accessibility, and efficient
+designed for professional users who require clarity, accessibility, and efficient
 access to operational data.
 
 ## Goals
