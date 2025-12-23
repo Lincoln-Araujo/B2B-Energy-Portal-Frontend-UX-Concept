@@ -1,22 +1,68 @@
+import type React from "react";
 import { useEffect, useRef } from "react";
 import { SidebarNav } from "./SidebarNav";
 
 type MobileDrawerProps = {
   open: boolean;
   onClose: () => void;
+  returnFocusRef?: React.RefObject<HTMLElement | null>;
 };
 
-export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
+function getFocusable(container: HTMLElement) {
+  const selectors = [
+    "a[href]",
+    "button:not([disabled])",
+    "input:not([disabled])",
+    "select:not([disabled])",
+    "textarea:not([disabled])",
+    "[tabindex]:not([tabindex='-1'])",
+  ];
+  return Array.from(container.querySelectorAll<HTMLElement>(selectors.join(","))).filter(
+    (el) => !el.hasAttribute("disabled") && !el.getAttribute("aria-hidden")
+  );
+}
+
+export function MobileDrawer({ open, onClose, returnFocusRef }: MobileDrawerProps) {
+  const panelRef = useRef<HTMLDivElement | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    if (open) return;
+    returnFocusRef?.current?.focus?.();
+  }, [open, returnFocusRef]);
 
   useEffect(() => {
     if (!open) return;
 
-    // Focus the close button when opening
     closeBtnRef.current?.focus();
 
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+
+      if (e.key === "Tab") {
+        const panel = panelRef.current;
+        if (!panel) return;
+
+        const focusables = getFocusable(panel);
+        if (focusables.length === 0) return;
+
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        const active = document.activeElement as HTMLElement | null;
+
+        if (e.shiftKey && active === first) {
+          e.preventDefault();
+          last.focus();
+        }
+        else if (!e.shiftKey && active === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
 
     window.addEventListener("keydown", onKeyDown);
@@ -27,20 +73,20 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
 
   return (
     <div className="md:hidden">
-      {/* Overlay */}
       <div
-        className="fixed inset-0 z-40 bg-black/30"
+        className="fixed inset-0 z-40 bg-black/30 transition-opacity"
         onClick={onClose}
         aria-hidden="true"
       />
 
-      {/* Drawer */}
       <div
         id="mobile-nav-drawer"
         role="dialog"
         aria-modal="true"
         aria-label="Navigation menu"
-        className="fixed left-0 top-0 z-50 h-full w-80 max-w-[85vw] border-r bg-white shadow-xl"
+        ref={panelRef}
+        className="fixed left-0 top-0 z-50 h-full w-80 max-w-[85vw] border-r bg-white shadow-xl outline-none
+                   transition-transform duration-200 ease-out translate-x-0"
       >
         <div className="flex h-14 items-center justify-between border-b px-4">
           <p className="text-sm font-semibold">Navigation</p>

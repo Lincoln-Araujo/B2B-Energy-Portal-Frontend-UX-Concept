@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { SkipLink } from "./SkipLink";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
@@ -11,29 +11,21 @@ export function AppShell({ children }: AppShellProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
 
-  useEffect(() => {
-    if (!menuOpen) {
-      setTimeout(() => menuButtonRef.current?.focus(), 0);
-    }
-  }, [menuOpen]);
-
   return (
     <div className="min-h-dvh bg-gray-50 text-gray-900">
       <SkipLink />
 
-      <div
-        ref={(node) => {
-          if (!node) return;
-          menuButtonRef.current = node.querySelector("button[aria-controls='mobile-nav-drawer']");
-        }}
-      >
-        <Header
-          onOpenMenu={() => setMenuOpen(true)}
-          isMenuOpen={menuOpen}
-        />
-      </div>
+      <Header
+        onOpenMenu={() => setMenuOpen(true)}
+        isMenuOpen={menuOpen}
+        menuButtonRef={menuButtonRef}
+      />
 
-      <MobileDrawer open={menuOpen} onClose={() => setMenuOpen(false)} />
+      <MobileDrawer
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        returnFocusRef={menuButtonRef}
+      />
 
       <div className="flex h-[calc(100dvh-3.5rem)] w-full">
         <Sidebar />
