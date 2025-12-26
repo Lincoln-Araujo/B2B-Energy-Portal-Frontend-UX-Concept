@@ -25,14 +25,70 @@ function isAssetStatus(value: string): value is AssetStatus {
   return value === "Operational" || value === "Maintenance" || value === "Alert";
 }
 
+const statusStyles: Record<
+  AssetStatus,
+  { badge: string; label: string }
+> = {
+  Operational: {
+    badge: "border-emerald-200 bg-emerald-50 text-emerald-800",
+    label: "Operational",
+  },
+  Maintenance: {
+    badge: "border-amber-200 bg-amber-50 text-amber-900",
+    label: "Maintenance",
+  },
+  Alert: {
+    badge: "border-red-200 bg-red-50 text-red-900",
+    label: "Alert",
+  },
+};
+
+function StatusBadge({ status }: { status: AssetStatus }) {
+  const s = statusStyles[status];
+  return (
+    <span
+      className={[
+        "inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium",
+        s.badge,
+      ].join(" ")}
+      aria-label={`Asset status: ${s.label}`}
+      title={`Status: ${s.label}`}
+    >
+      {s.label}
+    </span>
+  );
+}
+
+function SkeletonCell({ maxWidth = 240 }: { maxWidth?: number }) {
+  return (
+    <div
+      className="h-4 w-full rounded bg-gray-200/80"
+      style={{ maxWidth }}
+    />
+  );
+}
+
 function SkeletonRow() {
   return (
     <tr className="border-b last:border-b-0">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <td key={i} className="px-4 py-3">
-          <div className="h-4 w-full max-w-[240px] rounded bg-gray-200" />
-        </td>
-      ))}
+      <td className="px-4 py-3">
+        <SkeletonCell maxWidth={120} />
+      </td>
+      <td className="px-4 py-3">
+        <SkeletonCell maxWidth={220} />
+      </td>
+      <td className="px-4 py-3">
+        <SkeletonCell maxWidth={160} />
+      </td>
+      <td className="px-4 py-3">
+        <SkeletonCell maxWidth={110} />
+      </td>
+      <td className="px-4 py-3">
+        <SkeletonCell maxWidth={180} />
+      </td>
+      <td className="px-4 py-3">
+        <SkeletonCell maxWidth={110} />
+      </td>
     </tr>
   );
 }
@@ -78,7 +134,8 @@ function DetailsDialog({ asset, onClose }: DetailsDialogProps) {
             type="button"
             onClick={onClose}
             className="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-gray-50
-                       focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
+                       focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2
+                       transition-colors duration-700 ease-out"
           >
             Close
           </button>
@@ -98,7 +155,9 @@ function DetailsDialog({ asset, onClose }: DetailsDialogProps) {
               </div>
               <div>
                 <dt className="text-xs font-semibold text-gray-700">Status</dt>
-                <dd className="mt-1 text-gray-900">{asset.status}</dd>
+                <dd className="mt-1">
+                  <StatusBadge status={asset.status} />
+                </dd>
               </div>
             </div>
 
@@ -112,7 +171,8 @@ function DetailsDialog({ asset, onClose }: DetailsDialogProps) {
             <button
               type="button"
               className="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-gray-50
-                         focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
+                         focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2
+                         transition-colors duration-700 ease-out"
               onClick={() => alert("Placeholder: navigate to Asset details page")}
             >
               Open full page
@@ -121,7 +181,8 @@ function DetailsDialog({ asset, onClose }: DetailsDialogProps) {
             <button
               type="button"
               className="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-gray-50
-                         focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
+                         focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2
+                         transition-colors duration-700 ease-out"
               onClick={() => alert("Placeholder: export asset details")}
             >
               Export
@@ -147,22 +208,22 @@ export function Assets() {
   const [selected, setSelected] = useState<Asset | null>(null);
   const viewBtnRef = useRef<HTMLButtonElement | null>(null);
 
-    const loadingTimerRef = useRef<number | null>(null);
+  const loadingTimerRef = useRef<number | null>(null);
 
   const withLoading = useCallback((fn: () => void) => {
     setIsLoading(true);
 
     if (loadingTimerRef.current) {
-        window.clearTimeout(loadingTimerRef.current);
+      window.clearTimeout(loadingTimerRef.current);
     }
 
     fn();
 
     loadingTimerRef.current = window.setTimeout(() => {
-        setIsLoading(false);
-        loadingTimerRef.current = null;
+      setIsLoading(false);
+      loadingTimerRef.current = null;
     }, 500);
-}, []);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -171,7 +232,6 @@ export function Assets() {
       }
     };
   }, []);
-
 
   function toggleSort(nextKey: SortKey) {
     setPage(1);
@@ -231,7 +291,9 @@ export function Assets() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold">Assets</h1>
-          <p className="mt-2 text-sm text-gray-700">Search, filter, sort and paginate assets.</p>
+          <p className="mt-2 max-w-3xl text-sm text-gray-700">
+            Browse monitored equipment, filter by operational status, and open details for quick triage.
+          </p>
         </div>
 
         <div className="text-sm text-gray-700" aria-live="polite">
@@ -241,7 +303,7 @@ export function Assets() {
 
       {/* Filters */}
       <section className="mt-6" aria-label="Asset filters">
-        <div className="rounded-lg border bg-white p-4">
+        <div className="rounded-lg border bg-white p-4 transition-shadow duration-700 ease-out hover:shadow-sm">
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <label htmlFor="asset-search" className="block text-sm font-medium">
@@ -252,10 +314,10 @@ export function Assets() {
                 type="search"
                 value={query}
                 onChange={(e) => {
-                    withLoading(() => {
-                        setPage(1);
-                        setQuery(e.target.value);
-                    });
+                  withLoading(() => {
+                    setPage(1);
+                    setQuery(e.target.value);
+                  });
                 }}
                 onKeyDown={(e) => {
                   if (e.key === "Escape") setQuery("");
@@ -274,11 +336,11 @@ export function Assets() {
                 id="asset-status"
                 value={status}
                 onChange={(e) => {
-                    const v = e.target.value;
-                    withLoading(() => {
-                        setPage(1);
-                        setStatus(v === "All" ? "All" : isAssetStatus(v) ? v : "All");
-                    });
+                  const v = e.target.value;
+                  withLoading(() => {
+                    setPage(1);
+                    setStatus(v === "All" ? "All" : isAssetStatus(v) ? v : "All");
+                  });
                 }}
                 className="mt-2 w-full rounded-md border bg-white px-3 py-2 text-sm
                            focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
@@ -296,32 +358,29 @@ export function Assets() {
               type="button"
               onClick={() => {
                 withLoading(() => {
-                    setQuery("");
-                    setStatus("All");
-                    setPage(1);
+                  setQuery("");
+                  setStatus("All");
+                  setPage(1);
                 });
               }}
               className="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-gray-50
-                         focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
+                         focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2
+                         transition-colors duration-700 ease-out"
             >
               Clear filters
             </button>
 
-            <span className="text-xs text-gray-600">
-              Loading is simulated to showcase skeleton UI patterns.
-            </span>
+            <span className="text-xs text-gray-600">Loading is simulated to showcase skeleton UI patterns.</span>
           </div>
         </div>
       </section>
 
       {/* Table */}
       <section className="mt-6" aria-label="Assets table">
-        <div className="rounded-lg border bg-white">
+        <div className="rounded-lg border bg-white transition-shadow duration-700 ease-out hover:shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[880px] text-left text-sm">
-              <caption className="sr-only">
-                Assets with sortable columns and a per-row actions column.
-              </caption>
+              <caption className="sr-only">Assets with sortable columns and a per-row actions column.</caption>
 
               <thead className="border-b bg-gray-50">
                 <tr>
@@ -330,17 +389,16 @@ export function Assets() {
                       <button
                         type="button"
                         onClick={() =>
-                            withLoading(() => {
-                                toggleSort(key);
-                            })
+                          withLoading(() => {
+                            toggleSort(key);
+                          })
                         }
                         className="font-semibold hover:underline
-                                   focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
+                                   focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2
+                                   transition-colors duration-700 ease-out"
                       >
                         {key === "updatedAt" ? "Last update" : key.charAt(0).toUpperCase() + key.slice(1)}
-                        <span className="sr-only">
-                          {sortKey === key ? `, sorted ${sortDir}` : ", not sorted"}
-                        </span>
+                        <span className="sr-only">{sortKey === key ? `, sorted ${sortDir}` : ", not sorted"}</span>
                       </button>
                     </th>
                   ))}
@@ -351,12 +409,19 @@ export function Assets() {
                 </tr>
               </thead>
 
-              <tbody 
-                className={isLoading ? "animate-pulse" : ""}
-                aria-busy={isLoading}
-              >
+              <tbody aria-busy={isLoading}>
                 {isLoading ? (
                   <>
+                    <tr className="border-b">
+                      <td colSpan={6} className="px-4 py-2">
+                        <div className="h-1.5 w-full overflow-hidden rounded bg-gray-100">
+                          <div className="h-full w-1/3 animate-[shimmer_1.2s_infinite] rounded bg-gray-200" />
+                        </div>
+                        <style>
+                          {`@keyframes shimmer { 0% { transform: translateX(-120%);} 100% { transform: translateX(360%);} }`}
+                        </style>
+                      </td>
+                    </tr>
                     <SkeletonRow />
                     <SkeletonRow />
                     <SkeletonRow />
@@ -371,11 +436,13 @@ export function Assets() {
                   </tr>
                 ) : (
                   paginated.map((a, idx) => (
-                    <tr key={a.id} className="border-b last:border-b-0 hover:bg-gray-50">
+                    <tr key={a.id} className="border-b last:border-b-0 hover:bg-gray-50 transition-colors duration-700">
                       <td className="px-4 py-3 font-medium">{a.id}</td>
                       <td className="px-4 py-3">{a.name}</td>
                       <td className="px-4 py-3">{a.site}</td>
-                      <td className="px-4 py-3">{a.status}</td>
+                      <td className="px-4 py-3">
+                        <StatusBadge status={a.status} />
+                      </td>
                       <td className="px-4 py-3">{a.updatedAt}</td>
                       <td className="px-4 py-3">
                         <button
@@ -383,7 +450,8 @@ export function Assets() {
                           ref={idx === 0 ? viewBtnRef : undefined}
                           onClick={() => setSelected(a)}
                           className="rounded-md border px-2 py-1 text-sm font-medium hover:bg-gray-50
-                                     focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
+                                     focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2
+                                     transition-all duration-700 ease-out hover:-translate-y-[1px]"
                         >
                           View details
                         </button>
@@ -403,10 +471,10 @@ export function Assets() {
                 id="rows-per-page"
                 value={rowsPerPage}
                 onChange={(e) => {
-                    withLoading(() => {
-                        setPage(1);
-                        setRowsPerPage(Number(e.target.value));
-                    });
+                  withLoading(() => {
+                    setPage(1);
+                    setRowsPerPage(Number(e.target.value));
+                  });
                 }}
                 className="rounded-md border bg-white px-2 py-1
                            focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
@@ -421,13 +489,14 @@ export function Assets() {
               <button
                 type="button"
                 onClick={() =>
-                    withLoading(() => {
-                        setPage((p) => Math.max(1, p - 1));
-                    })
+                  withLoading(() => {
+                    setPage((p) => Math.max(1, p - 1));
+                  })
                 }
                 disabled={page === 1 || isLoading}
                 className="rounded-md border px-2 py-1 disabled:opacity-50
-                           focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
+                           focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2
+                           transition-colors duration-700 ease-out"
               >
                 Previous
               </button>
@@ -439,13 +508,14 @@ export function Assets() {
               <button
                 type="button"
                 onClick={() =>
-                    withLoading(() => {
-                        setPage((p) => Math.min(totalPages, p + 1));
-                    })
+                  withLoading(() => {
+                    setPage((p) => Math.min(totalPages, p + 1));
+                  })
                 }
                 disabled={page >= totalPages || isLoading}
                 className="rounded-md border px-2 py-1 disabled:opacity-50
-                           focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2"
+                           focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/30 focus-visible:ring-offset-2
+                           transition-colors duration-700 ease-out"
               >
                 Next
               </button>
